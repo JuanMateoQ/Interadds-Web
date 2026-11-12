@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+.env
+.env.local
+.env.*.local
+# Material de la CA: la clave privada NUNCA se sube (RS-11)
+ca-data/
+ca-offline/
+# Archivos subidos por proveedores
+storage/
+# Registros y temporales
+*.log
+.DS_Store
+coverage/
+next-env.d.ts
+*.tsbuildinfo

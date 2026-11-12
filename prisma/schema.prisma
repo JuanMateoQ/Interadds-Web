@@ -1,0 +1,423 @@
+// Interadds - Bimestre 1 (monolito modular).
+// Cinco módulos con sus propias tablas (RNF-10). El prefijo de cada tabla indica el módulo dueño:
+//   auth_*      Autenticación (Sebas Ramos)
+//   contracts_* Catálogo y contratos (Danna Morales)
+//   signing_*   CA, firma y evidencias (Domenica Cardenas)
+//   payments_*  Pagos con PayPal (Mateo Quisilema)
+//   chat_*      Chat, entrega y avisos (Salma Morales)
+// Entre módulos NO hay claves foráneas: solo identificadores escalares (userId, contractId),
+// así el paso a microservicios del Bimestre 2 consiste en mover carpetas y tablas.
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────── Enumeraciones ─────────────────────────────
+
+enum Role {
+  CLIENTE
+  PROVEEDOR
+  ADMIN_SISTEMA
+}
+
+enum UserStatus {
+  ACTIVO
+  BLOQUEADO
+}
+
+enum ServiceStatus {
+  BORRADOR
+  PUBLICADO
+  PAUSADO
+}
+
+// Los 7 estados del contrato; solo avanza en este orden (RNF-22).
+enum ContractStatus {
+  GENERADO
+  FIRMADO_PARCIAL
+  VIGENTE
+  ANTICIPO_PAGADO
+  CONTENIDO_ENTREGADO
+  CONTENIDO_APROBADO
+  COMPLETADO
+}
+
+enum CertStatus {
+  ACTIVO
+  REVOCADO
+}
+
+enum NoncePurpose {
+  CERTIFICADO
+  FIRMA_CONTRATO
+  APROBACION
+}
+
+enum EvidenceKind {
+  ORIGEN
+  RECEPCION
+}
+
+enum EvidenceEvent {
+  FIRMA_CLIENTE
+  FIRMA_PROVEEDOR
+  PAGO
+  ENTREGA_CONTENIDO
+  APROBACION_CONTENIDO
+}
+
+enum PaymentTranche {
+  ANTICIPO
+  SALDO
+}
+
+enum PaymentStatus {
+  CREADA
+  PENDIENTE
+  CAPTURADA
+  FALLIDA
+}
+
+enum RoomKind {
+  GENERAL
+  CONTRATO
+}
+
+enum DeliveryStatus {
+  SUBIDO
+  APROBADO
+}
+
+enum NotificationType {
+  CONTRATO_PENDIENTE
+  CONTRAPARTE_FIRMO
+  ANTICIPO_RECIBIDO
+  CONTENIDO_SUBIDO
+  CONTENIDO_APROBADO
+  SALDO_PAGADO
+}
+
+// ───────────────────────────── Módulo: Autenticación ─────────────────────────────
+
+model User {
+  id               String     @id @default(uuid())
+  email            String     @unique
+  name             String
+  phone            String?
+  passwordHash     String
+  role             Role       @default(CLIENTE)
+  status           UserStatus @default(ACTIVO)
+  failedLoginCount Int        @default(0)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  providerProfile ProviderProfile?
+  sessions        Session[]
+  resets          PasswordReset[]
+
+  @@map("auth_users")
+}
+
+model ProviderProfile {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  tradeName    String
+  description  String
+  contactEmail String?
+  contactPhone String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("auth_provider_profiles")
+}
+
+model Session {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  csrfToken String
+  userAgent String?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_sessions")
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_password_resets")
+}
+
+// ───────────────────────────── Módulo: Catálogo y contratos ─────────────────────────────
+
+model Category {
+  id   String @id @default(uuid())
+  name String @unique
+  slug String @unique
+
+  services Service[]
+
+  @@map("contracts_categories")
+}
+
+model Service {
+  id           String        @id @default(uuid())
+  providerId   String
+  categoryId   String
+  title        String
+  description  String
+  priceCents   Int
+  deliveryDays Int
+  status       ServiceStatus @default(BORRADOR)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  category  Category   @relation(fields: [categoryId], references: [id])
+  contracts Contract[]
+
+  // Índices de los campos de búsqueda del catálogo (RNF-06)
+  @@index([status, categoryId])
+  @@index([status, priceCents])
+  @@index([providerId])
+  @@index([title])
+  @@map("contracts_services")
+}
+
+model ContractTemplate {
+  id        String   @id @default(uuid())
+  version   Int      @unique
+  name      String
+  body      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("contracts_templates")
+}
+
+model Contract {
+  id                 String         @id @default(uuid())
+  serviceId          String?
+  serviceTitle       String
+  serviceDescription String
+  categoryName       String
+  clientId           String
+  clientName         String
+  clientEmail        String
+  providerId         String
+  providerName       String
+  providerEmail      String
+  templateVersion    Int
+  text               String
+  textHash           String
+  totalCents         Int
+  anticipoCents      Int
+  saldoCents         Int
+  currency           String         @default("USD")
+  deliveryDays       Int
+  status             ContractStatus @default(GENERADO)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  service Service?               @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  history ContractStateChange[]
+
+  @@index([clientId])
+  @@index([providerId])
+  @@index([status])
+  @@index([serviceId])
+  @@map("contracts_contracts")
+}
+
+model ContractStateChange {
+  id         String          @id @default(uuid())
+  contractId String
+  fromStatus ContractStatus?
+  toStatus   ContractStatus
+  actorId    String?
+  reason     String?
+  createdAt  DateTime        @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@map("contracts_state_history")
+}
+
+// ───────────────────────────── Módulo: Firma digital, CA y evidencias ─────────────────────────────
+
+model Certificate {
+  id            String     @id @default(uuid())
+  serial        String     @unique
+  userId        String
+  subject       String
+  publicKeySpki String
+  pem           String
+  issuerSerial  String
+  notBefore     DateTime
+  notAfter      DateTime
+  status        CertStatus @default(ACTIVO)
+  createdAt     DateTime   @default(now())
+
+  evidences Evidence[]
+
+  @@index([userId])
+  @@map("signing_certificates")
+}
+
+model Nonce {
+  id         String       @id @default(uuid())
+  nonce      String       @unique
+  userId     String
+  purpose    NoncePurpose
+  contractId String?
+  subject    String?
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime     @default(now())
+
+  @@index([userId, purpose])
+  @@map("signing_nonces")
+}
+
+model Evidence {
+  id             String        @id @default(uuid())
+  contractId     String
+  event          EvidenceEvent
+  kind           EvidenceKind
+  ref            String        @default("")
+  actorId        String
+  certificateId  String?
+  subjectHash    String
+  payload        String
+  signature      String?
+  nonce          String?
+  meta           Json?
+  timestampUtc   DateTime
+  timestampToken String
+  recordHash     String
+  createdAt      DateTime      @default(now())
+
+  certificate Certificate? @relation(fields: [certificateId], references: [id], onDelete: SetNull)
+
+  @@unique([contractId, event, kind, ref])
+  @@index([contractId])
+  @@index([actorId])
+  @@map("signing_evidences")
+}
+
+// ───────────────────────────── Módulo: Pagos (PayPal Orders v2) ─────────────────────────────
+
+model Payment {
+  id              String         @id @default(uuid())
+  contractId      String
+  payerId         String
+  payeeId         String
+  tranche         PaymentTranche
+  amountCents     Int
+  currency        String         @default("USD")
+  status          PaymentStatus  @default(CREADA)
+  referenceId     String         @unique
+  attempt         Int            @default(1)
+  gatewayName     String
+  paypalOrderId   String?        @unique
+  paypalCaptureId String?        @unique
+  nonce           String?
+  receiptNumber   String?        @unique
+  receipt         Json?
+  integrityHash   String?
+  settlement      String         @default("PENDIENTE_DE_LIQUIDACION")
+  failureReason   String?
+  orderCreatedAt  DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  capturedAt      DateTime?
+
+  // Un pago por contrato y tramo: base de la idempotencia (RNF-22)
+  @@unique([contractId, tranche])
+  @@index([contractId])
+  @@map("payments_payments")
+}
+
+// ───────────────────────────── Módulo: Chat, entrega y avisos ─────────────────────────────
+
+model Room {
+  id         String   @id @default(uuid())
+  kind       RoomKind
+  contractId String?  @unique
+  name       String
+  createdAt  DateTime @default(now())
+
+  messages Message[]
+
+  @@map("chat_rooms")
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  roomId     String
+  authorId   String
+  authorName String
+  text       String
+  createdAt  DateTime @default(now())
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
+  @@map("chat_messages")
+}
+
+model Delivery {
+  id           String         @id @default(uuid())
+  contractId   String
+  uploaderId   String
+  version      Int
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  sha256       String
+  storageKey   String
+  status       DeliveryStatus @default(SUBIDO)
+  openedAt     DateTime?
+  approvedAt   DateTime?
+  createdAt    DateTime       @default(now())
+
+  @@unique([contractId, version])
+  @@index([contractId])
+  @@map("chat_deliveries")
+}
+
+model Notification {
+  id         String           @id @default(uuid())
+  userId     String
+  type       NotificationType
+  contractId String?
+  title      String
+  body       String
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@map("chat_notifications")
+}

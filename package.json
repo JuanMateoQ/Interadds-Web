@@ -1,0 +1,51 @@
+{
+  "name": "interadds",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interadds - marketplace de servicios de marketing con contratos firmados digitalmente (Web B1, monolito modular)",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "build": "next build",
+    "start": "cross-env NODE_ENV=production tsx src/server.ts",
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force",
+    "ca:init": "tsx scripts/ca-init.ts",
+    "setup": "npm run db:migrate && npm run ca:init && npm run db:seed",
+    "test": "tsx scripts/run-tests.ts",
+    "perf": "tsx scripts/measure-performance.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@peculiar/x509": "^3.1.0",
+    "@prisma/adapter-pg": "^6.19.3",
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^18.0.9",
+    "next": "^15.5.29",
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "reflect-metadata": "^0.2.2",
+    "socket.io": "^4.8.4",
+    "socket.io-client": "^4.8.4",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "cross-env": "^10.1.0",
+    "prisma": "^6.19.3",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}
