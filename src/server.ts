@@ -3,6 +3,7 @@
 import './lib/env';
 import http from 'http';
 import next from 'next';
+import { attachSocketServer } from './modules/chat/socket';
 
 const dev = process.env.NODE_ENV !== 'production';
 const port = parseInt(process.env.PORT || '3000', 10);
@@ -16,6 +17,7 @@ app
   .prepare()
   .then(() => {
     server.on('request', (req, res) => handle(req, res));
+    attachSocketServer(server); // Socket.IO con handshake autenticado (RNF-04)
     server.listen(port, () => {
       console.log(`> Interadds listo en http://${hostname}:${port} (${dev ? 'desarrollo' : 'producción'})`);
       console.log(`> Pasarela de pago: ${process.env.PAYMENT_GATEWAY || 'paypal'}`);
