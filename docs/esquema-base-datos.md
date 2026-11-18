@@ -19,8 +19,6 @@ erDiagram
   contracts_contracts ||..o{ chat_deliveries : "contractId (sin FK)"
 ```
 
-Las líneas punteadas son referencias **lógicas** entre módulos: no hay llave foránea, así que separar las bases en el Bimestre 2 no rompe nada.
-
 ## Tablas por módulo
 
 ### Autenticación (`auth_*`)
