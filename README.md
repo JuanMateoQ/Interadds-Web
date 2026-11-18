@@ -1,10 +1,10 @@
-# Interadds — Web B1 (monolito modular)
+# Interadds — Web (monolito modular)
 
 Marketplace de servicios de marketing digital con **contrato digital firmado**: el Cliente elige un servicio, genera el contrato (con huella SHA-256), ambos lo firman con certificados emitidos por la **CA propia de Interadds**, el Cliente paga el 50 % de anticipo con **PayPal Sandbox**, conversan y entregan el contenido por chat en tiempo real, el Cliente aprueba con su firma y paga el 50 % restante.
 
-> Proyecto académico (Aplicaciones Web Avanzadas · Bimestre 1). Los pagos son de **PayPal Sandbox**: no se mueve dinero real.
+> Proyecto académico. Los pagos son de **PayPal Sandbox**: no se mueve dinero real.
 
-## La PYME y el problema
+## La PYME y el problemas
 **Caso de estudio:** una plataforma intermediaria (ficticia) que conecta a **pequeñas y medianas empresas** del contexto local con **agencias y freelancers de marketing digital** (SEO, redes sociales, publicidad, diseño y contenido). Los datos de usuarios, servicios y contratos de demostración son inventados.
 
 **Problema:** hoy estos servicios se contratan por mensajería informal: no hay un contrato claro ni verificable, se paga por adelantado sin garantía y, cuando hay desacuerdo, ninguna de las partes puede demostrar qué se acordó, qué se entregó ni cuándo. Esto genera desconfianza, retrasos y pérdidas, sobre todo para negocios pequeños sin área legal.
@@ -14,11 +14,11 @@ Marketplace de servicios de marketing digital con **contrato digital firmado**: 
 
 **Específicos (medibles):**
 1. Registrar y autenticar usuarios con roles (Cliente, Proveedor), con claves almacenadas como hash y recuperación de clave.
-2. Permitir al Proveedor administrar su catálogo (CRUD con validación en servidor) y al Cliente buscarlo y contratar.
+2. Permitir al Proveedor administrar su catálogo (CRUD con validación en servidor) y al Cliente buscarlo y contratar. 
 3. Generar un contrato inmutable con huella SHA-256 y firmarlo por ambas partes con certificados de una CA propia (estados `GENERADO` → `VIGENTE`).
 4. Cobrar el 50 % de anticipo y el 50 % de saldo con PayPal Sandbox, sin pagos duplicados.
 5. Habilitar un chat por contrato por WebSocket autenticado, con entrega y aprobación del contenido.
-6. Cubrir el camino feliz con al menos 5 pruebas automatizadas (hay 74) y medir el rendimiento de las consultas.
+6. Cubrir el happy path con al menos 5 pruebas automatizadas (hay 74) y medir el rendimiento de las consultas.
 
 ## Integrantes y roles
 | Integrante | Rol (vertical) | Puntos B1 |
@@ -30,7 +30,7 @@ Marketplace de servicios de marketing digital con **contrato digital firmado**: 
 | Salma Morales | Chat y entrega (WebSocket, notificaciones, entregas) | 19 |
 | Sebas Sarasti | Frontend y presentación (layout, pantallas, demo) | 25 |
 
-## Cronograma (Web B1: presentación el miércoles 18 de noviembre)
+## Cronograma De Interadds
 | Fecha | Actividad | Responsable |
 |---|---|---|
 | jue 12 nov | Repositorio, servidor Node con Next.js, Prisma, migración inicial y `.env.example`; hash de claves; autenticación | Mateo · Sebas Ramos |
@@ -41,16 +41,13 @@ Marketplace de servicios de marketing digital con **contrato digital firmado**: 
 | mar 17 nov | Ensayo de la presentación y de la defensa; etiqueta `v1.0-b1` | Todo el equipo · Mateo |
 | mié 18 nov | Presentación y defensa | Todo el equipo |
 
-*La subida del código sigue el plan de 22 commits ordenados (carpeta `PLAN_DE_COMMITS`), con rama y Pull Request por paso.*
-
 **Pila:** Node.js ≥ 20 · TypeScript (ejecutado con `tsx`) · Next.js 15 (App Router) con servidor propio (`src/server.ts`) · Socket.IO en el mismo proceso · PostgreSQL + Prisma (ORM; no se usa TypeORM porque la guía fija «Next.js + Prisma») · zod · bcrypt · WebCrypto (ECDSA P-256).
 
 ## Requisitos previos
 - Node.js 20 o superior y npm
-- PostgreSQL 14 o superior (una base `interadds` y otra `interadds_test`)
-- Una cuenta de [PayPal Developer](https://developer.paypal.com/) con una app Sandbox (solo si usas `PAYMENT_GATEWAY=paypal`)
+- PostgreSQL 14 o superior (una base `interadds` y otra `interadds_test`) 
 
-## Puesta en marcha
+## Guía de Instalación
 ```bash
 npm install
 cp .env.example .env            # en Windows (PowerShell): Copy-Item .env.example .env
@@ -89,9 +86,8 @@ Corre 74 pruebas con el ejecutor nativo de Node (`node:test`, con `tsx` para Typ
 | `tests/signing.test.ts` | CA de dos niveles, prueba de posesión, firma, repetición, nonce vencido, evidencia manipulada |
 | `tests/payments.test.ts` | anticipo y saldo, idempotencia, timeout, monto distinto, re-autenticación |
 | `tests/chat.test.ts` | WebSocket: sin sesión, sala por contrato, saneamiento, límite de frecuencia, entregas |
-| `tests/e2e.test.ts` | camino feliz completo por los siete estados |
-
-Rendimiento: `npm run perf` mide consultas y escribe `docs/rendimiento.md`.
+| `tests/e2e.test.ts` | happy path completo por los siete estados |
+|Rendimiento: `npm run perf` | mide consultas y escribe `docs/rendimiento.md`.|
 
 ## Estructura
 ```
@@ -108,26 +104,24 @@ src/app/                   Páginas y rutas /api (Next.js App Router)
 src/components/            Componentes de interfaz
 src/lib/                   Utilidades, validación (zod), seguridad y cliente del navegador
 tests/                     Pruebas automatizadas
-docs/                      Arquitectura, esquema de BD, guion de demo, rendimiento
-TRAZABILIDAD_EQUIPO_B1.md  Requisitos → archivos, defensa individual y guía de PR
+docs/                      Arquitectura, esquema de BD y rendimiento
 ```
-Documentación: [arquitectura](docs/arquitectura.md) · [esquema de base de datos](docs/esquema-base-datos.md) · [guion de demo](docs/guion-demo.md) · [rendimiento](docs/rendimiento.md) · [trazabilidad del equipo](TRAZABILIDAD_EQUIPO_B1.md).
+Documentación: [arquitectura](docs/arquitectura.md) · [esquema de base de datos](docs/esquema-base-datos.md) · [rendimiento](docs/rendimiento.md).
 
 ## Seguridad en resumen
 Sesión aleatoria en cookie `HttpOnly` + `SameSite=Strict` (solo se guarda su hash) · token CSRF y comprobación de `Origin` en toda escritura · bcrypt · errores de login genéricos · re-autenticación para firmar y pagar · nonces de un solo uso · contrato inmutable (hash + trigger) · acceso solo para las dos partes · monto de pago calculado en el servidor · WebSocket con handshake autenticado, saneamiento y límite de frecuencia · secretos solo en variables de entorno.
 
 Para el despliegue: `NODE_ENV=production`, `COOKIE_SECURE=true`, HTTPS delante del servidor (así el chat viaja por `wss`) y `PAYMENT_GATEWAY=paypal`.
 
-**Límites conocidos de B1:** no hay cifrado en reposo del contrato ni de las entregas (es un componente de Desarrollo Seguro), ni bloqueo por intentos fallidos, ni auditoría centralizada; el pago al Proveedor queda como «pendiente de liquidación».
 
 ## Uso de IA
 Este proyecto se desarrolló con apoyo de **Claude (Anthropic)** como asistente de programación, bajo la dirección y revisión del equipo.
 
 - **Qué hizo la IA:** propuso la arquitectura modular, escribió el código de los cinco módulos, la interfaz, las pruebas automatizadas y esta documentación a partir de los requisitos y del reparto del equipo.
-- **Qué hizo el equipo:** definió los requisitos y el alcance, revisó el código, ejecutó y comprobó el sistema (pruebas y recorrido en navegador), configuró PayPal Sandbox y la base de datos, y es responsable de entender y defender cada parte (ver `TRAZABILIDAD_EQUIPO_B1.md`).
-- **Cómo se verificó el resultado:** 74 pruebas automatizadas (`npm test`) y un recorrido completo del camino feliz en un navegador real.
+- **Qué hizo el equipo:** definió los requisitos y el alcance, revisó el código, ejecutó y comprobó el sistema (pruebas y recorrido en navegador), configuró PayPal Sandbox y la base de datos, y es responsable de entender y defender cada parte.
+- **Cómo se verificó el resultado:** 74 pruebas automatizadas (`npm test`) y un recorrido completo del happy path en un navegador real.
 - **Datos:** no se enviaron credenciales ni datos personales reales a la IA; las cuentas y contratos de demostración son ficticios.
-- **Criterio:** el código generado por IA puede contener errores; ningún cambio se fusiona sin revisión de otra persona del equipo (regla de PR en `TRAZABILIDAD_EQUIPO_B1.md`).
+- **Criterio:** el código generado por IA puede contener errores; ningún cambio se fusiona sin revisión de otra persona del equipo.
 
 ## Entrega y etiqueta
 Cuando todos los PR estén fusionados y `npm test` pase en `main`:

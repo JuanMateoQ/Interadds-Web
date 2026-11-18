@@ -1,6 +1,6 @@
 # Arquitectura del monolito (RNF-10)
 
-Interadds Web B1 es **un solo proceso Node.js**: `src/server.ts` crea el servidor HTTP, le monta Next.js (vistas y rutas API en el servidor) y le monta el servidor Socket.IO. Dentro hay **cinco módulos**, cada uno con sus propias tablas; los módulos solo se llaman entre sí por funciones públicas. En el Bimestre 2 pasar a servicios es **mover carpetas**: cada módulo ya tiene su código, sus tablas y su frontera.
+Interadds Web es **un solo proceso Node.js**: `src/server.ts` crea el servidor HTTP, le monta Next.js (vistas y rutas API en el servidor) y le monta el servidor Socket.IO. Dentro hay **cinco módulos**, cada uno con sus propias tablas; los módulos solo se llaman entre sí por funciones públicas. 
 
 ```mermaid
 flowchart TB
@@ -82,9 +82,9 @@ sequenceDiagram
 
 ## Decisiones
 
-- **Sesión en cookie, no JWT**: B1 usa una sesión aleatoria (solo se guarda su hash) en cookie `HttpOnly` + `SameSite=Strict`, más token CSRF y comprobación de `Origin`. El JWT asimétrico es del Bimestre 2.
+- **Sesión en cookie, no JWT**: Se usa una sesión aleatoria (solo se guarda su hash) en cookie `HttpOnly` + `SameSite=Strict`, más token CSRF y comprobación de `Origin`.
 - **La clave privada nunca viaja**: se genera en el navegador (no exportable); al servidor solo llegan la clave pública, la prueba de posesión y las firmas.
 - **CA propia de dos niveles**: raíz (clave fuera de línea en `ca-offline/`) y emisora (en archivo o variable base64).
 - **Reglas en la base de datos**: un trigger impide editar el texto, el hash, los montos o las partes del contrato y solo permite avanzar el estado de uno en uno.
 - **Pagos idempotentes**: único `(contrato, tramo)`, referencia propia, `PayPal-Request-Id`, monto calculado en el servidor y comprobado al capturar.
-- **Sin cifrado en reposo** (RS-21 es de Desarrollo Seguro): el contrato se protege con hash SHA-256 y firmas; las entregas se guardan en `UPLOAD_DIR` sin cifrar.
+- **Sin cifrado en reposo**: el contrato se protege con hash SHA-256 y firmas; las entregas se guardan en `UPLOAD_DIR` sin cifrar.
